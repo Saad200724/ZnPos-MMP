@@ -40,8 +40,9 @@ const toTransaction = (t: typeof transactionsTable.$inferSelect, items: typeof t
 
 function generateReceiptNo(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.floor(1000 + Math.random() * 9000);
-  return `POS-${date}-${rand}`;
+  return `POS-${date}-${ts}-${rand}`;
 }
 
 router.get("/transactions", requireAuth, async (req, res): Promise<void> => {

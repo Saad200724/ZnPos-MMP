@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
-import { db, purchasesTable } from "../db";
+import { eq, desc, sql } from "drizzle-orm";
+import { db, purchasesTable, purchaseItemsTable, productsTable } from "../db";
 import {
   GetPurchasesResponse, CreatePurchaseBody,
 } from "../../shared/src";
@@ -26,15 +26,39 @@ router.post("/purchases", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const { supplierId, supplierName, total, status, notes, items } = parsed.data;
+
   const poNumber = `PO-${Date.now()}`;
   const [purchase] = await db.insert(purchasesTable).values({
     poNumber,
-    supplierId: parsed.data.supplierId ?? null,
-    supplierName: parsed.data.supplierName ?? "",
-    total: String(parsed.data.total),
-    status: parsed.data.status ?? "pending",
-    notes: parsed.data.notes ?? null,
+    supplierId: supplierId ?? null,
+    supplierName: supplierName ?? "",
+    total: String(total),
+    status: status ?? "pending",
+    notes: notes ?? null,
   }).returning();
+
+  if (items && items.length > 0) {
+    await db.insert(purchaseItemsTable).values(
+      items.map(item => ({
+        purchaseId: purchase.id,
+        productId: item.productId ?? null,
+        productName: item.productName,
+        qty: item.qty,
+        cost: String(item.cost),
+        lineTotal: String(item.lineTotal),
+      }))
+    );
+
+    for (const item of items) {
+      if (item.productId) {
+        await db.update(productsTable)
+          .set({ stock: sql`${productsTable.stock} + ${item.qty}` })
+          .where(eq(productsTable.id, item.productId));
+      }
+    }
+  }
+
   res.status(201).json(toPurchase(purchase));
 });
 
