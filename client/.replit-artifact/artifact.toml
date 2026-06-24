@@ -15,10 +15,10 @@ paths = [ "/mew-mew-pos/" ]
 localPort = 8081
 
 [services.development]
-run = "npm run dev:client"
+run = "pnpm run dev:client"
 
 [services.production]
-build = [ "npm", "run", "build" ]
+build = [ "pnpm", "run", "build" ]
 publicDir = "client/dist/public"
 serve = "static"
 
