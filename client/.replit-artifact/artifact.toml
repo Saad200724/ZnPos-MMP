@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/mew-mew-pos/"
+title = "Mew Mew POS"
+version = "1.0.0"
+id = "artifacts/mew-mew-pos"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/mew-mew-pos/" ]
+localPort = 8081
+
+[services.development]
+run = "npm run dev:client"
+
+[services.production]
+build = [ "npm", "run", "build" ]
+publicDir = "client/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "8081"
+BASE_PATH = "/mew-mew-pos/"

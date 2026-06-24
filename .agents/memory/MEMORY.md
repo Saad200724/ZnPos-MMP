@@ -1,0 +1,3 @@
+- [connect-pg-simple esbuild fix](connect-pg-simple-esbuild.md) — must externalize connect-pg-simple in build.mjs or sessions silently fail
+- [Drizzle numeric coercion](drizzle-numeric-coercion.md) — Drizzle returns numeric/decimal columns as strings; coerce before Zod parse
+- [Monorepo flat structure](monorepo-structure.md) — root packages are client/, server/, shared/; artifact shells (no source) remain at artifacts/api-server/ and artifacts/mew-mew-pos/
