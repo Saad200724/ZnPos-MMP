@@ -6,7 +6,7 @@ import {
   Package2, TrendingUp, Landmark, FileText, ArrowDownLeft,
   Boxes, UserCheck, UsersRound, MessageSquare, Activity, ChevronDown,
   ShoppingBag, LineChart, Layers, ClipboardList, RotateCcw,
-  User, ChevronRight, KeyRound
+  User, ChevronRight, KeyRound, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import logo from '/logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,6 +159,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -287,9 +288,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[220px] flex-col bg-sidebar border-r border-sidebar-border shadow-xl z-20 flex-shrink-0">
-        <SidebarContent />
-      </aside>
+      <motion.aside
+        animate={{ width: sidebarOpen ? 220 : 0 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 280 }}
+        className="hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border shadow-xl z-20 flex-shrink-0 overflow-hidden"
+      >
+        <div className="w-[220px] flex flex-col h-full">
+          <SidebarContent />
+        </div>
+      </motion.aside>
 
       {/* Mobile Sidebar */}
       <AnimatePresence>
@@ -326,11 +333,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="bg-card border-b border-border px-4 py-2.5 flex items-center justify-between gap-3 z-10 shadow-sm flex-shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mobile menu button */}
             <button
               className="lg:hidden p-2 -ml-1 rounded-xl hover:bg-accent text-muted-foreground transition-colors cursor-pointer"
               onClick={() => setIsMobileMenuOpen(true)}
             >
               <Menu className="w-5 h-5" />
+            </button>
+            {/* Desktop sidebar toggle */}
+            <button
+              className="hidden lg:flex p-2 -ml-1 rounded-xl hover:bg-accent text-muted-foreground transition-colors cursor-pointer"
+              onClick={() => setSidebarOpen(v => !v)}
+              title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+            >
+              {sidebarOpen
+                ? <PanelLeftClose className="w-5 h-5" />
+                : <PanelLeftOpen className="w-5 h-5" />
+              }
             </button>
             {currentPage && (
               <div className="flex items-center gap-2.5 min-w-0">
