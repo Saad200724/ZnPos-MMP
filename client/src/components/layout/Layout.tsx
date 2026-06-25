@@ -45,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="font-display text-white font-bold text-sm leading-tight">Meow Meow</div>
           <div className="text-[11px] text-sidebar-foreground/60 mt-0.5">Pet Shop POS</div>
         </div>
-        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
       </div>
 
       {/* Nav items */}
@@ -61,7 +61,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold
                 transition-all duration-200 cursor-pointer
                 ${active
-                  ? 'bg-sidebar-primary text-primary-foreground shadow-lg shadow-sidebar-primary/25'
+                  ? 'bg-sidebar-primary text-primary-foreground'
                   : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-white'}
               `}>
                 {active && (
