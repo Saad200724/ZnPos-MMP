@@ -1,3 +1,5 @@
 - [connect-pg-simple esbuild fix](connect-pg-simple-esbuild.md) — must externalize connect-pg-simple in build.mjs or sessions silently fail
 - [Drizzle numeric coercion](drizzle-numeric-coercion.md) — Drizzle returns numeric/decimal columns as strings; coerce before Zod parse
 - [Monorepo flat structure](monorepo-structure.md) — root packages are client/, server/, shared/; artifact shells (no source) remain at artifacts/api-server/ and artifacts/mew-mew-pos/
+- [MongoDB Atlas database name](mongodb-atlas-dbname.md) — cluster URI has no db name; specify /mew-mew-pos in URI or reads hit existing cluster data with wrong schema
+- [MongoDB numeric IDs](mongodb-numeric-ids.md) — shared types use id: number; use a Counters collection with findByIdAndUpdate $inc to auto-increment per collection

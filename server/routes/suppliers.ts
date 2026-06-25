@@ -1,23 +1,25 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, suppliersTable } from "../db";
+import { Supplier, nextId } from "../db";
 import {
   GetSuppliersResponse, CreateSupplierBody,
   UpdateSupplierBody, UpdateSupplierParams, UpdateSupplierResponse
 } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
-import { parseNum } from "../lib/coerce";
 
 const router: IRouter = Router();
 
-const toSupplier = (s: typeof suppliersTable.$inferSelect) => ({
-  ...s,
-  balance: parseNum(s.balance),
-  createdAt: s.createdAt.toISOString(),
+const toSupplier = (s: any) => ({
+  id: s.id,
+  name: s.name,
+  phone: s.phone ?? null,
+  email: s.email ?? null,
+  address: s.address ?? null,
+  balance: s.balance,
+  createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
 });
 
 router.get("/suppliers", requireAuth, async (req, res): Promise<void> => {
-  const suppliers = await db.select().from(suppliersTable).orderBy(suppliersTable.name);
+  const suppliers = await Supplier.find().sort({ name: 1 });
   res.json(GetSuppliersResponse.parse(suppliers.map(toSupplier)));
 });
 
@@ -27,10 +29,8 @@ router.post("/suppliers", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [supplier] = await db.insert(suppliersTable).values({
-    ...parsed.data,
-    balance: String(parsed.data.balance ?? 0),
-  }).returning();
+  const id = await nextId("suppliers");
+  const supplier = await Supplier.create({ id, ...parsed.data, balance: parsed.data.balance ?? 0 });
   res.status(201).json(UpdateSupplierResponse.parse(toSupplier(supplier)));
 });
 
@@ -39,9 +39,11 @@ router.patch("/suppliers/:id", requireAuth, async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
   const parsed = UpdateSupplierBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const updateData: Record<string, unknown> = { ...parsed.data };
-  if (parsed.data.balance != null) updateData.balance = String(parsed.data.balance);
-  const [supplier] = await db.update(suppliersTable).set(updateData).where(eq(suppliersTable.id, params.data.id)).returning();
+  const supplier = await Supplier.findOneAndUpdate(
+    { id: params.data.id },
+    { $set: parsed.data },
+    { new: true }
+  );
   if (!supplier) { res.status(404).json({ error: "Supplier not found" }); return; }
   res.json(UpdateSupplierResponse.parse(toSupplier(supplier)));
 });

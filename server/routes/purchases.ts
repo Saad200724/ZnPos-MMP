@@ -1,22 +1,25 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql } from "drizzle-orm";
-import { db, purchasesTable, purchaseItemsTable, productsTable } from "../db";
+import { Purchase, Product, nextId } from "../db";
 import {
   GetPurchasesResponse, CreatePurchaseBody,
 } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
-import { parseNum } from "../lib/coerce";
 
 const router: IRouter = Router();
 
-const toPurchase = (p: typeof purchasesTable.$inferSelect) => ({
-  ...p,
-  total: parseNum(p.total),
-  createdAt: p.createdAt.toISOString(),
+const toPurchase = (p: any) => ({
+  id: p.id,
+  poNumber: p.poNumber,
+  supplierId: p.supplierId ?? null,
+  supplierName: p.supplierName,
+  total: p.total,
+  status: p.status,
+  notes: p.notes ?? null,
+  createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt),
 });
 
 router.get("/purchases", requireAuth, async (req, res): Promise<void> => {
-  const purchases = await db.select().from(purchasesTable).orderBy(desc(purchasesTable.createdAt));
+  const purchases = await Purchase.find().sort({ createdAt: -1 });
   res.json(GetPurchasesResponse.parse(purchases.map(toPurchase)));
 });
 
@@ -28,33 +31,33 @@ router.post("/purchases", requireAuth, async (req, res): Promise<void> => {
   }
   const { supplierId, supplierName, total, status, notes, items } = parsed.data;
 
+  const id = await nextId("purchases");
   const poNumber = `PO-${Date.now()}`;
-  const [purchase] = await db.insert(purchasesTable).values({
+
+  const purchase = await Purchase.create({
+    id,
     poNumber,
     supplierId: supplierId ?? null,
     supplierName: supplierName ?? "",
-    total: String(total),
+    total,
     status: status ?? "pending",
     notes: notes ?? null,
-  }).returning();
+    items: (items ?? []).map(item => ({
+      productId: item.productId ?? null,
+      productName: item.productName,
+      qty: item.qty,
+      cost: item.cost,
+      lineTotal: item.lineTotal,
+    })),
+  });
 
   if (items && items.length > 0) {
-    await db.insert(purchaseItemsTable).values(
-      items.map(item => ({
-        purchaseId: purchase.id,
-        productId: item.productId ?? null,
-        productName: item.productName,
-        qty: item.qty,
-        cost: String(item.cost),
-        lineTotal: String(item.lineTotal),
-      }))
-    );
-
     for (const item of items) {
       if (item.productId) {
-        await db.update(productsTable)
-          .set({ stock: sql`${productsTable.stock} + ${item.qty}` })
-          .where(eq(productsTable.id, item.productId));
+        await Product.findOneAndUpdate(
+          { id: item.productId },
+          { $inc: { stock: item.qty }, $set: { updatedAt: new Date() } }
+        );
       }
     }
   }

@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
+import MongoStore from "connect-mongo";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -11,8 +11,6 @@ declare module "express-session" {
     userId: number;
   }
 }
-
-const PgSession = connectPgSimple(session);
 
 const app: Express = express();
 
@@ -30,12 +28,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
-    store: new PgSession({
-      conString: process.env.DATABASE_URL,
-      tableName: "user_sessions",
-      createTableIfMissing: true,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 30 * 24 * 60 * 60,
+      touchAfter: 24 * 3600,
     }),
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET ?? "mew-mew-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {

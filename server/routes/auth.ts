@@ -1,7 +1,6 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
-import { db, usersTable } from "../db";
+import { User } from "../db";
 import { LoginUserBody, LoginUserResponse, GetMeResponse } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -14,7 +13,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
   const { username, password } = parsed.data;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username));
+  const user = await User.findOne({ username });
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
@@ -29,7 +28,7 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
+  const user = await User.findOne({ id: req.session.userId });
   if (!user) {
     res.status(401).json({ error: "User not found" });
     return;

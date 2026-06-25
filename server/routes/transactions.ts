@@ -1,40 +1,38 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql } from "drizzle-orm";
-import { db, transactionsTable, transactionItemsTable, productsTable, customersTable } from "../db";
+import { Transaction, Product, Customer, nextId } from "../db";
 import {
   GetTransactionsResponse, GetTransactionResponse, CreateTransactionBody,
   GetTransactionParams,
 } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
-import { parseNum } from "../lib/coerce";
 
 const router: IRouter = Router();
 
-const toTransaction = (t: typeof transactionsTable.$inferSelect, items: typeof transactionItemsTable.$inferSelect[] = []) => ({
+const toTransaction = (t: any) => ({
   id: t.id,
   receiptNo: t.receiptNo,
-  customerId: t.customerId,
+  customerId: t.customerId ?? null,
   customerName: t.customerName,
-  userId: t.userId,
-  subtotal: parseNum(t.subtotal),
-  discountPct: parseNum(t.discountPct),
-  discountAmt: parseNum(t.discountAmt),
-  tax: parseNum(t.tax),
-  total: parseNum(t.total),
+  userId: t.userId ?? null,
+  subtotal: t.subtotal,
+  discountPct: t.discountPct,
+  discountAmt: t.discountAmt,
+  tax: t.tax,
+  total: t.total,
   paymentMethod: t.paymentMethod,
   status: t.status,
-  notes: t.notes,
-  createdAt: t.createdAt.toISOString(),
-  items: items.map(i => ({
+  notes: t.notes ?? null,
+  createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : String(t.createdAt),
+  items: (t.items ?? []).map((i: any) => ({
     id: i.id,
-    transactionId: i.transactionId,
-    productId: i.productId,
+    transactionId: t.id,
+    productId: i.productId ?? null,
     productName: i.productName,
     productBrand: i.productBrand,
     sku: i.sku,
-    price: parseNum(i.price),
+    price: i.price,
     qty: i.qty,
-    lineTotal: parseNum(i.lineTotal),
+    lineTotal: i.lineTotal,
   })),
 });
 
@@ -46,8 +44,8 @@ function generateReceiptNo(): string {
 }
 
 router.get("/transactions", requireAuth, async (req, res): Promise<void> => {
-  const transactions = await db.select().from(transactionsTable).orderBy(desc(transactionsTable.createdAt)).limit(100);
-  res.json(GetTransactionsResponse.parse(transactions.map(t => toTransaction(t))));
+  const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(100);
+  res.json(GetTransactionsResponse.parse(transactions.map(toTransaction)));
 });
 
 router.post("/transactions", requireAuth, async (req, res): Promise<void> => {
@@ -57,70 +55,82 @@ router.post("/transactions", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const data = parsed.data;
-  
+
+  const txId = await nextId("transactions");
   const receiptNo = generateReceiptNo();
-  
-  const [transaction] = await db.insert(transactionsTable).values({
+
+  let itemIdStart = txId * 1000;
+  const items = data.items.map((item, idx) => ({
+    id: itemIdStart + idx,
+    productId: item.productId ?? null,
+    productName: item.productName,
+    productBrand: item.productBrand,
+    sku: item.sku,
+    price: item.price,
+    qty: item.qty,
+    lineTotal: item.lineTotal,
+  }));
+
+  const transaction = await Transaction.create({
+    id: txId,
     receiptNo,
     customerId: data.customerId ?? null,
     customerName: data.customerName ?? "Walk-in Customer",
     userId: req.session.userId ?? null,
-    subtotal: String(data.subtotal),
-    discountPct: String(data.discountPct ?? 0),
-    discountAmt: String(data.discountAmt ?? 0),
-    tax: String(data.tax ?? 0),
-    total: String(data.total),
+    subtotal: data.subtotal,
+    discountPct: data.discountPct ?? 0,
+    discountAmt: data.discountAmt ?? 0,
+    tax: data.tax ?? 0,
+    total: data.total,
     paymentMethod: data.paymentMethod,
     status: "completed",
     notes: data.notes ?? null,
-  }).returning();
-
-  const items = await db.insert(transactionItemsTable).values(
-    data.items.map(item => ({
-      transactionId: transaction.id,
-      productId: item.productId ?? null,
-      productName: item.productName,
-      productBrand: item.productBrand,
-      sku: item.sku,
-      price: String(item.price),
-      qty: item.qty,
-      lineTotal: String(item.lineTotal),
-    }))
-  ).returning();
+    items,
+  });
 
   for (const item of data.items) {
     if (item.productId) {
-      await db.update(productsTable)
-        .set({ stock: sql`GREATEST(0, ${productsTable.stock} - ${item.qty})` })
-        .where(eq(productsTable.id, item.productId));
+      await Product.findOneAndUpdate(
+        { id: item.productId },
+        { $inc: { stock: -item.qty }, $set: { updatedAt: new Date() } }
+      );
+      await Product.findOneAndUpdate(
+        { id: item.productId, stock: { $lt: 0 } },
+        { $set: { stock: 0 } }
+      );
     }
   }
 
   if (data.customerId) {
-    const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, data.customerId));
+    const customer = await Customer.findOne({ id: data.customerId });
     if (customer) {
-      const newTotalPurchases = parseNum(customer.totalPurchases) + data.total;
-      const newBalance = data.paymentMethod === "credit" 
-        ? parseNum(customer.balance) + data.total 
-        : parseNum(customer.balance);
-      await db.update(customersTable).set({
-        visits: customer.visits + 1,
-        totalPurchases: String(newTotalPurchases),
-        balance: String(newBalance),
-      }).where(eq(customersTable.id, data.customerId));
+      const newTotalPurchases = customer.totalPurchases + data.total;
+      const newBalance = data.paymentMethod === "credit"
+        ? customer.balance + data.total
+        : customer.balance;
+      await Customer.findOneAndUpdate(
+        { id: data.customerId },
+        {
+          $set: {
+            visits: customer.visits + 1,
+            totalPurchases: newTotalPurchases,
+            balance: newBalance,
+            updatedAt: new Date(),
+          },
+        }
+      );
     }
   }
 
-  res.status(201).json(GetTransactionResponse.parse(toTransaction(transaction, items)));
+  res.status(201).json(GetTransactionResponse.parse(toTransaction(transaction)));
 });
 
 router.get("/transactions/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetTransactionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
-  const [transaction] = await db.select().from(transactionsTable).where(eq(transactionsTable.id, params.data.id));
+  const transaction = await Transaction.findOne({ id: params.data.id });
   if (!transaction) { res.status(404).json({ error: "Transaction not found" }); return; }
-  const items = await db.select().from(transactionItemsTable).where(eq(transactionItemsTable.transactionId, transaction.id));
-  res.json(GetTransactionResponse.parse(toTransaction(transaction, items)));
+  res.json(GetTransactionResponse.parse(toTransaction(transaction)));
 });
 
 export default router;
