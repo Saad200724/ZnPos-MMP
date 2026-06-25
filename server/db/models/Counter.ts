@@ -11,7 +11,7 @@ export async function nextId(collectionName: string): Promise<number> {
   const counter = await Counter.findByIdAndUpdate(
     collectionName,
     { $inc: { seq: 1 } },
-    { new: true, upsert: true }
+    { returnDocument: "after", upsert: true }
   );
   return counter!.seq;
 }
