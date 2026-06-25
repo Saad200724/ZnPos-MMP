@@ -1,4 +1,5 @@
 import { connectDB } from "./db";
+import { ensureSeeded } from "./db/seed";
 import app from "./app";
 import { logger } from "./lib/logger";
 
@@ -15,6 +16,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 connectDB()
+  .then(() => ensureSeeded())
   .then(() => {
     app.listen(port, (err) => {
       if (err) {
