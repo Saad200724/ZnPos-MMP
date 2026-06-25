@@ -48,7 +48,7 @@ task = "shell.exec"
 args = "PORT=8081 BASE_PATH=/ pnpm run dev:client"
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
 
 [postMerge]
