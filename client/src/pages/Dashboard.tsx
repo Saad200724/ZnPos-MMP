@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import {
   DollarSign, ShoppingCart, Users, AlertTriangle, ArrowUpRight,
-  TrendingUp, Package, Receipt, Leaf, Activity
+  TrendingUp, Package, Receipt, Leaf, Activity, Trophy, Crown,
+  Star, Truck, CreditCard, Banknote, Wallet, PhoneCall, UserCheck,
+  BadgeDollarSign, ChevronRight, Building2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -25,6 +27,29 @@ const fadeUp = (delay = 0) => ({
   animate: { opacity: 1, y: 0 },
   transition: { delay, type: 'spring' as const, stiffness: 220, damping: 22 },
 });
+
+const RANK_STYLES = [
+  { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-300', icon: Crown },
+  { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-300', icon: Trophy },
+  { bg: 'bg-orange-100', text: 'text-orange-600', ring: 'ring-orange-300', icon: Star },
+  { bg: 'bg-emerald-50', text: 'text-emerald-600', ring: 'ring-emerald-200', icon: Star },
+  { bg: 'bg-blue-50', text: 'text-blue-600', ring: 'ring-blue-200', icon: Star },
+];
+
+const METHOD_STYLE: Record<string, { icon: typeof CreditCard; gradient: string; accent: string; light: string }> = {
+  Cash:    { icon: Banknote,    gradient: 'from-emerald-500 to-teal-500',  accent: 'text-emerald-700', light: 'bg-emerald-100' },
+  Card:    { icon: CreditCard,  gradient: 'from-blue-500 to-indigo-500',   accent: 'text-blue-700',    light: 'bg-blue-100'    },
+  MFS:     { icon: Wallet,      gradient: 'from-purple-500 to-pink-500',   accent: 'text-purple-700',  light: 'bg-purple-100'  },
+  bKash:   { icon: Wallet,      gradient: 'from-pink-500 to-rose-500',     accent: 'text-pink-700',    light: 'bg-pink-100'    },
+  Nagad:   { icon: Wallet,      gradient: 'from-orange-500 to-amber-500',  accent: 'text-orange-700',  light: 'bg-orange-100'  },
+  Default: { icon: BadgeDollarSign, gradient: 'from-slate-500 to-gray-500', accent: 'text-slate-700', light: 'bg-slate-100'  },
+};
+
+const GROUP_BADGE: Record<string, string> = {
+  VIP:     'bg-amber-100 text-amber-700 border-amber-200',
+  Regular: 'bg-blue-50 text-blue-600 border-blue-200',
+  Wholesale: 'bg-violet-100 text-violet-700 border-violet-200',
+};
 
 export function Dashboard() {
   const [activeFilter, setActiveFilter] = useState('Monthly');
@@ -72,6 +97,10 @@ export function Dashboard() {
       badgeBg: 'bg-amber-100 text-amber-700',
     },
   ];
+
+  const topProductsMax = Math.max(...(stats?.topProducts ?? []).map(p => p.revenue), 1);
+  const topCustomersMax = Math.max(...(stats?.topCustomers ?? []).map(c => c.totalPurchases), 1);
+  const incomeTotal = (stats?.incomeByAccount ?? []).reduce((s, m) => s + m.amount, 0);
 
   return (
     <div className={`p-4 md:p-6 space-y-5 max-w-[1600px] mx-auto ${isLoading ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -202,15 +231,15 @@ export function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ── Bottom Row ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
+      {/* ── Low Stock + Recent Transactions ───────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Low Stock Alert */}
         <motion.div {...fadeUp(0.34)} className="clay-card p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-amber-100">
-                <AlertTriangle className="w-4.5 h-4.5 text-amber-600 w-[18px] h-[18px]" />
+                <AlertTriangle className="w-[18px] h-[18px] text-amber-600" />
               </div>
               <div>
                 <div className="font-display font-bold text-card-foreground text-sm leading-tight">Low Stock Alert</div>
@@ -296,6 +325,308 @@ export function Dashboard() {
               </div>
             )}
           </div>
+        </motion.div>
+      </div>
+
+      {/* ── Top Products + Top Customers (2-col) ──────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Top Products */}
+        <motion.div {...fadeUp(0.46)} className="clay-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-violet-100">
+                <Trophy className="w-[18px] h-[18px] text-violet-600" />
+              </div>
+              <div>
+                <div className="font-display font-bold text-card-foreground text-sm leading-tight">Top Products</div>
+                <div className="text-[11px] text-muted-foreground">By revenue this year</div>
+              </div>
+            </div>
+            <button className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/70 transition-colors cursor-pointer px-3 py-1.5 rounded-lg hover:bg-primary/8">
+              View All <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {(stats?.topProducts ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+              <Package className="w-9 h-9 opacity-25" />
+              <p className="text-sm font-medium">No sales data yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {(stats?.topProducts ?? []).map((prod, i) => {
+                const rankStyle = RANK_STYLES[i] ?? RANK_STYLES[4];
+                const RankIcon = rankStyle.icon;
+                const pct = Math.round((prod.revenue / topProductsMax) * 100);
+                return (
+                  <div key={prod.id} className="flex items-center gap-3 group cursor-pointer p-2 rounded-xl hover:bg-accent/60 transition-all duration-200 border border-transparent hover:border-border/50">
+                    {/* Rank badge */}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 ${rankStyle.bg} ${rankStyle.ring}`}>
+                      {i === 0 ? (
+                        <Crown className={`w-4 h-4 ${rankStyle.text}`} />
+                      ) : (
+                        <span className={`text-xs font-extrabold ${rankStyle.text}`}>{i + 1}</span>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1 gap-2">
+                        <span className="text-sm font-semibold text-card-foreground truncate group-hover:text-primary transition-colors leading-tight">{prod.name}</span>
+                        <span className="text-sm font-extrabold text-emerald-600 flex-shrink-0">৳{prod.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ delay: 0.5 + i * 0.07, duration: 0.6, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">{prod.units} units</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Top Customers */}
+        <motion.div {...fadeUp(0.52)} className="clay-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-sky-100">
+                <UserCheck className="w-[18px] h-[18px] text-sky-600" />
+              </div>
+              <div>
+                <div className="font-display font-bold text-card-foreground text-sm leading-tight">Top Customers</div>
+                <div className="text-[11px] text-muted-foreground">By lifetime spend</div>
+              </div>
+            </div>
+            <button className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/70 transition-colors cursor-pointer px-3 py-1.5 rounded-lg hover:bg-primary/8">
+              View All <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {(stats?.topCustomers ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+              <Users className="w-9 h-9 opacity-25" />
+              <p className="text-sm font-medium">No customer data yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {(stats?.topCustomers ?? []).map((cust, i) => {
+                const rankStyle = RANK_STYLES[i] ?? RANK_STYLES[4];
+                const pct = Math.round((cust.totalPurchases / topCustomersMax) * 100);
+                const groupBadge = GROUP_BADGE[cust.group] ?? 'bg-gray-100 text-gray-600 border-gray-200';
+                const initials = cust.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                return (
+                  <div key={cust.id} className="flex items-center gap-3 group cursor-pointer p-2 rounded-xl hover:bg-accent/60 transition-all duration-200 border border-transparent hover:border-border/50">
+                    {/* Avatar */}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 font-extrabold text-xs ${rankStyle.bg} ${rankStyle.text} ${rankStyle.ring}`}>
+                      {i === 0 ? <Crown className="w-4 h-4" /> : initials}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5 gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm font-semibold text-card-foreground truncate group-hover:text-primary transition-colors leading-tight">{cust.name}</span>
+                          <span className={`hidden sm:inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-bold border flex-shrink-0 ${groupBadge}`}>{cust.group}</span>
+                        </div>
+                        <span className="text-sm font-extrabold text-sky-600 flex-shrink-0">৳{cust.totalPurchases.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ delay: 0.55 + i * 0.07, duration: 0.6, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">{cust.visits} visits</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── Income by Account + Customer Due + Supplier Due (3-col) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6">
+
+        {/* Income by Account */}
+        <motion.div {...fadeUp(0.58)} className="clay-card p-5 flex flex-col">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-indigo-100">
+              <BadgeDollarSign className="w-[18px] h-[18px] text-indigo-600" />
+            </div>
+            <div>
+              <div className="font-display font-bold text-card-foreground text-sm leading-tight">Income by Account</div>
+              <div className="text-[11px] text-muted-foreground">Payment method split</div>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="mb-4 px-3 py-2.5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/5 border border-indigo-100">
+            <div className="text-[11px] text-indigo-600 font-semibold mb-0.5">Total Income</div>
+            <div className="text-xl font-extrabold text-indigo-700 font-display">
+              ৳{incomeTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+          </div>
+
+          {(stats?.incomeByAccount ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2 flex-1">
+              <Wallet className="w-9 h-9 opacity-25" />
+              <p className="text-sm font-medium">No income recorded</p>
+            </div>
+          ) : (
+            <div className="space-y-3 flex-1">
+              {(stats?.incomeByAccount ?? []).map((acc) => {
+                const style = METHOD_STYLE[acc.method] ?? METHOD_STYLE.Default;
+                const MethodIcon = style.icon;
+                return (
+                  <div key={acc.method} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${style.light} flex-shrink-0`}>
+                          <MethodIcon className={`w-3.5 h-3.5 ${style.accent}`} />
+                        </div>
+                        <span className="text-xs font-semibold text-card-foreground">{acc.method}</span>
+                        <span className="text-[10px] text-muted-foreground">({acc.count} txn)</span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xs font-extrabold ${style.accent}`}>৳{acc.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        <span className="text-[10px] text-muted-foreground ml-1">{acc.pct}%</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                      <motion.div
+                        className={`h-full rounded-full bg-gradient-to-r ${style.gradient}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${acc.pct}%` }}
+                        transition={{ delay: 0.6, duration: 0.7, ease: 'easeOut' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Customer Due Amount */}
+        <motion.div {...fadeUp(0.63)} className="clay-card p-5 flex flex-col">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-rose-100">
+              <Users className="w-[18px] h-[18px] text-rose-600" />
+            </div>
+            <div>
+              <div className="font-display font-bold text-card-foreground text-sm leading-tight">Customer Due</div>
+              <div className="text-[11px] text-muted-foreground">{stats?.totalCustomersDue ?? 0} customers with dues</div>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="mb-4 px-3 py-2.5 rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/5 border border-rose-100">
+            <div className="text-[11px] text-rose-600 font-semibold mb-0.5">Total Outstanding</div>
+            <div className="text-xl font-extrabold text-rose-700 font-display">
+              ৳{(stats?.totalDueAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+
+          {(stats?.customerDueList ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2 flex-1">
+              <Users className="w-9 h-9 opacity-25" />
+              <p className="text-sm font-medium">No outstanding dues</p>
+            </div>
+          ) : (
+            <div className="space-y-2 flex-1">
+              {(stats?.customerDueList ?? []).map((cust, i) => {
+                const initials = cust.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                const hues = ['bg-rose-100 text-rose-700', 'bg-pink-100 text-pink-700', 'bg-orange-100 text-orange-700', 'bg-amber-100 text-amber-700', 'bg-red-100 text-red-700'];
+                return (
+                  <div key={cust.id} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-rose-50/60 transition-colors cursor-pointer border border-transparent hover:border-rose-100">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-extrabold flex-shrink-0 ${hues[i % hues.length]}`}>
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-card-foreground truncate leading-tight">{cust.name}</div>
+                      {cust.phone && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <PhoneCall className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground">{cust.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs font-extrabold text-rose-600">৳{cust.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Supplier Due Amount */}
+        <motion.div {...fadeUp(0.68)} className="clay-card p-5 flex flex-col">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center bg-amber-100">
+              <Truck className="w-[18px] h-[18px] text-amber-600" />
+            </div>
+            <div>
+              <div className="font-display font-bold text-card-foreground text-sm leading-tight">Supplier Due</div>
+              <div className="text-[11px] text-muted-foreground">Payable to suppliers</div>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="mb-4 px-3 py-2.5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-100">
+            <div className="text-[11px] text-amber-700 font-semibold mb-0.5">Total Payable</div>
+            <div className="text-xl font-extrabold text-amber-800 font-display">
+              ৳{(stats?.supplierDueAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+
+          {(stats?.supplierDueList ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2 flex-1">
+              <Building2 className="w-9 h-9 opacity-25" />
+              <p className="text-sm font-medium">No payables outstanding</p>
+            </div>
+          ) : (
+            <div className="space-y-2 flex-1">
+              {(stats?.supplierDueList ?? []).map((sup, i) => {
+                const hues = ['bg-amber-100 text-amber-700', 'bg-orange-100 text-orange-700', 'bg-yellow-100 text-yellow-700', 'bg-red-100 text-red-700', 'bg-rose-100 text-rose-700'];
+                const initials = sup.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                return (
+                  <div key={sup.id} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50/60 transition-colors cursor-pointer border border-transparent hover:border-amber-100">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-extrabold flex-shrink-0 ${hues[i % hues.length]}`}>
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-card-foreground truncate leading-tight">{sup.name}</div>
+                      {sup.phone && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <PhoneCall className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground">{sup.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs font-extrabold text-amber-700">৳{sup.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

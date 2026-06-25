@@ -403,7 +403,43 @@ export const GetDashboardStatsResponse = zod.object({
   "qty": zod.number(),
   "lineTotal": zod.number()
 })).optional()
-}))
+})),
+  "topProducts": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "revenue": zod.number(),
+  "units": zod.number(),
+  "rank": zod.number()
+})).optional(),
+  "topCustomers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "totalPurchases": zod.number(),
+  "visits": zod.number(),
+  "group": zod.string()
+})).optional(),
+  "incomeByAccount": zod.array(zod.object({
+  "method": zod.string(),
+  "amount": zod.number(),
+  "count": zod.number(),
+  "pct": zod.number()
+})).optional(),
+  "customerDueList": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "balance": zod.number(),
+  "group": zod.string()
+})).optional(),
+  "supplierDueAmount": zod.number().optional(),
+  "supplierDueList": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "balance": zod.number()
+})).optional()
 })
 
 

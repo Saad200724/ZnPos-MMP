@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { Transaction, Customer, Product, Category, Brand } from "../db";
+import { Transaction, Customer, Product, Category, Brand, Supplier } from "../db";
 import { GetDashboardStatsResponse } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -12,7 +12,7 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
   const tomorrowStart = new Date(todayStart.getTime() + 86400000);
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
-  const [todayTxns, allCustomers, allProducts, yearTxns, recentTxns, allCategories, allBrands] = await Promise.all([
+  const [todayTxns, allCustomers, allProducts, yearTxns, recentTxns, allCategories, allBrands, allSuppliers] = await Promise.all([
     Transaction.find({ createdAt: { $gte: todayStart, $lt: tomorrowStart }, status: "completed" }),
     Customer.find(),
     Product.find({ isActive: true }).lean(),
@@ -20,6 +20,7 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
     Transaction.find({ status: "completed" }).sort({ createdAt: -1 }).limit(10),
     Category.find({ isActive: true }).lean(),
     Brand.find({ isActive: true }).lean(),
+    Supplier.find().lean(),
   ]);
 
   const catMap: Record<string, string> = {};
@@ -106,6 +107,62 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
     items: [],
   });
 
+  // ── Top Products by revenue ───────────────────────────────────
+  const productRevMap: Record<string, { name: string; category: string; revenue: number; units: number }> = {};
+  for (const t of yearTxns) {
+    for (const item of t.items) {
+      const key = String(item.productId ?? item.productName);
+      const prod = allProducts.find(p => p._id.toString() === String(item.productId));
+      const catId = prod?.categoryId?.toString();
+      const cat = catId ? (catMap[catId] ?? "Other") : "Other";
+      if (!productRevMap[key]) productRevMap[key] = { name: item.productName, category: cat, revenue: 0, units: 0 };
+      productRevMap[key].revenue += item.lineTotal;
+      productRevMap[key].units += item.qty;
+    }
+  }
+  const topProducts = Object.entries(productRevMap)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5)
+    .map(([id, v], i) => ({ id, name: v.name, category: v.category, revenue: Math.round(v.revenue * 100) / 100, units: v.units, rank: i + 1 }));
+
+  // ── Top Customers by spend ────────────────────────────────────
+  const topCustomers = [...allCustomers]
+    .sort((a, b) => b.totalPurchases - a.totalPurchases)
+    .slice(0, 5)
+    .map(c => ({ id: c.id, name: c.name, phone: c.phone ?? null, totalPurchases: c.totalPurchases, visits: c.visits, group: c.group }));
+
+  // ── Income by payment method ──────────────────────────────────
+  const methodMap: Record<string, { amount: number; count: number }> = {};
+  for (const t of yearTxns) {
+    const m = t.paymentMethod ?? "Cash";
+    if (!methodMap[m]) methodMap[m] = { amount: 0, count: 0 };
+    methodMap[m].amount += t.total;
+    methodMap[m].count += 1;
+  }
+  const totalIncome = Object.values(methodMap).reduce((s, v) => s + v.amount, 0);
+  const incomeByAccount = Object.entries(methodMap)
+    .sort((a, b) => b[1].amount - a[1].amount)
+    .map(([method, v]) => ({
+      method,
+      amount: Math.round(v.amount * 100) / 100,
+      count: v.count,
+      pct: totalIncome > 0 ? Math.round((v.amount / totalIncome) * 100) : 0,
+    }));
+
+  // ── Customer Due List ─────────────────────────────────────────
+  const customerDueList = dueCustomers
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, 5)
+    .map(c => ({ id: c.id, name: c.name, phone: c.phone ?? null, balance: c.balance, group: c.group }));
+
+  // ── Supplier Due ──────────────────────────────────────────────
+  const dueSuppliers = allSuppliers.filter((s: any) => s.balance > 0);
+  const supplierDueAmount = dueSuppliers.reduce((sum: number, s: any) => sum + s.balance, 0);
+  const supplierDueList = dueSuppliers
+    .sort((a: any, b: any) => b.balance - a.balance)
+    .slice(0, 5)
+    .map((s: any) => ({ id: s.id, name: s.name, phone: s.phone ?? null, balance: s.balance }));
+
   const stats = {
     todaySales,
     todayOrders,
@@ -122,6 +179,12 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
     ],
     lowStockItems: lowStockItems.map(toProductDto),
     recentTransactions: recentTxns.map(toTxn),
+    topProducts,
+    topCustomers,
+    incomeByAccount,
+    customerDueList,
+    supplierDueAmount,
+    supplierDueList,
   };
 
   res.json(GetDashboardStatsResponse.parse(stats));
