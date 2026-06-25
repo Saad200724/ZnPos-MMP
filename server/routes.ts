@@ -7,6 +7,7 @@ import transactionsRouter from "./routes/transactions";
 import dashboardRouter from "./routes/dashboard";
 import suppliersRouter from "./routes/suppliers";
 import purchasesRouter from "./routes/purchases";
+import categoriesRouter from "./routes/categories";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(transactionsRouter);
 router.use(dashboardRouter);
 router.use(suppliersRouter);
 router.use(purchasesRouter);
+router.use(categoriesRouter);
 
 export default router;

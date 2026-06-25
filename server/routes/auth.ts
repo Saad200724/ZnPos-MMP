@@ -6,6 +6,16 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
+function getUserId(user: any): number {
+  return user.id ?? 0;
+}
+
+function getUserName(user: any): string {
+  if (user.name) return user.name;
+  const parts = [user.firstName, user.lastName].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : user.username;
+}
+
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginUserBody.safeParse(req.body);
   if (!parsed.success) {
@@ -14,12 +24,21 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
   const { username, password } = parsed.data;
   const user = await User.findOne({ username });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  const hash = user?.passwordHash ?? user?.password;
+  if (!user || !hash || !(await bcrypt.compare(password, hash))) {
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
-  req.session.userId = user.id;
-  res.json(LoginUserResponse.parse({ id: user.id, username: user.username, name: user.name, role: user.role, branch: user.branch }));
+  const userId = getUserId(user);
+  req.session.userId = userId;
+  req.session.userObjectId = user._id.toString();
+  res.json(LoginUserResponse.parse({
+    id: userId,
+    username: user.username,
+    name: getUserName(user),
+    role: user.role ?? "cashier",
+    branch: user.branch ?? "Main Branch",
+  }));
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {
@@ -28,12 +47,22 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const user = await User.findOne({ id: req.session.userId });
+  const objectId = req.session.userObjectId;
+  let user = objectId ? await User.findById(objectId) : null;
+  if (!user && req.session.userId) {
+    user = await User.findOne({ id: req.session.userId });
+  }
   if (!user) {
     res.status(401).json({ error: "User not found" });
     return;
   }
-  res.json(GetMeResponse.parse({ id: user.id, username: user.username, name: user.name, role: user.role, branch: user.branch }));
+  res.json(GetMeResponse.parse({
+    id: getUserId(user),
+    username: user.username,
+    name: getUserName(user),
+    role: user.role ?? "cashier",
+    branch: user.branch ?? "Main Branch",
+  }));
 });
 
 export default router;

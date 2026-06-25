@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { Transaction, Customer, Product } from "../db";
+import { Transaction, Customer, Product, Category, Brand } from "../db";
 import { GetDashboardStatsResponse } from "../../shared/src";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -12,13 +12,20 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
   const tomorrowStart = new Date(todayStart.getTime() + 86400000);
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
-  const [todayTxns, allCustomers, allProducts, yearTxns, recentTxns] = await Promise.all([
+  const [todayTxns, allCustomers, allProducts, yearTxns, recentTxns, allCategories, allBrands] = await Promise.all([
     Transaction.find({ createdAt: { $gte: todayStart, $lt: tomorrowStart }, status: "completed" }),
     Customer.find(),
-    Product.find({ active: true }),
+    Product.find({ isActive: true }).lean(),
     Transaction.find({ createdAt: { $gte: yearStart }, status: "completed" }),
     Transaction.find({ status: "completed" }).sort({ createdAt: -1 }).limit(10),
+    Category.find({ isActive: true }).lean(),
+    Brand.find({ isActive: true }).lean(),
   ]);
+
+  const catMap: Record<string, string> = {};
+  const brandMap: Record<string, string> = {};
+  allCategories.forEach((c: any) => { catMap[c._id.toString()] = c.name; });
+  allBrands.forEach((b: any) => { brandMap[b._id.toString()] = b.name; });
 
   const todaySales = todayTxns.reduce((s, t) => s + t.total, 0);
   const todayOrders = todayTxns.length;
@@ -26,8 +33,17 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
   const dueCustomers = allCustomers.filter(c => c.balance > 0);
   const totalDueAmount = dueCustomers.reduce((s, c) => s + c.balance, 0);
 
-  const lowStockItems = allProducts.filter(p => p.stock <= p.minStock).slice(0, 10);
-  const lowStockCount = allProducts.filter(p => p.stock <= p.minStock).length;
+  // Use stockQuantity for MERN products, fall back to stock for legacy
+  const lowStockItems = allProducts.filter(p => {
+    const qty = p.stockQuantity ?? (p as any).stock ?? 0;
+    const min = (p as any).minStock ?? 5;
+    return qty <= min;
+  }).slice(0, 10);
+  const lowStockCount = allProducts.filter(p => {
+    const qty = p.stockQuantity ?? (p as any).stock ?? 0;
+    const min = (p as any).minStock ?? 5;
+    return qty <= min;
+  }).length;
 
   const monthlySalesMap = new Array(12).fill(0);
   for (const t of yearTxns) {
@@ -35,13 +51,14 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
   }
   const monthlySales = MONTH_NAMES.map((month, i) => ({ month, sales: Math.round(monthlySalesMap[i] * 100) / 100 }));
 
+  // Top categories by revenue from transactions
   const categoryTotals: Record<string, number> = {};
   let grandTotal = 0;
-
   for (const t of yearTxns) {
     for (const item of t.items) {
-      const prod = allProducts.find(p => p.id === item.productId);
-      const cat = prod?.category ?? "Other";
+      const prod = allProducts.find(p => p._id.toString() === String(item.productId));
+      const catId = prod?.categoryId?.toString();
+      const cat = catId ? (catMap[catId] ?? "Other") : "Other";
       categoryTotals[cat] = (categoryTotals[cat] ?? 0) + item.lineTotal;
       grandTotal += item.lineTotal;
     }
@@ -49,7 +66,9 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
 
   const catColors: Record<string, string> = {
     "Dry Food": "#F97316", "Wet Food": "#2563EB", "Treats": "#16A34A",
-    "Supplements": "#D97706", "Accessories": "#DC2626", "Other": "#78716C",
+    "Supplements": "#D97706", "Accessories": "#DC2626",
+    "Adult Food": "#F97316", "Kitten Food": "#2563EB", "Collar": "#16A34A",
+    "Other": "#78716C",
   };
 
   const topCategories = Object.entries(categoryTotals)
@@ -61,11 +80,20 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
       fill: catColors[name] ?? "#78716C",
     }));
 
-  const toProduct = (p: any) => ({
-    id: p.id, sku: p.sku, name: p.name, brand: p.brand, category: p.category,
-    price: p.price, cost: p.cost, stock: p.stock, minStock: p.minStock,
-    unit: p.unit, weight: p.weight ?? null, active: p.active,
-    createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt),
+  const toProductDto = (p: any) => ({
+    id: p._id.toString(),
+    sku: p.sku ?? p._id.toString(),
+    name: p.name,
+    brand: p.brandId ? (brandMap[p.brandId.toString()] ?? "") : (p.brand ?? ""),
+    category: p.categoryId ? (catMap[p.categoryId.toString()] ?? "") : (p.category ?? ""),
+    price: p.price,
+    cost: p.cost ?? 0,
+    stock: p.stockQuantity ?? p.stock ?? 0,
+    minStock: p.minStock ?? 5,
+    unit: p.unit ?? "pcs",
+    weight: p.weight ?? null,
+    active: p.isActive ?? true,
+    createdAt: (p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt)).toISOString(),
   });
 
   const toTxn = (t: any) => ({
@@ -86,13 +114,13 @@ router.get("/dashboard/stats", requireAuth, async (req, res): Promise<void> => {
     lowStockCount,
     monthlySales,
     topCategories: topCategories.length > 0 ? topCategories : [
-      { name: "Dry Food", value: 38, fill: "#F97316" },
-      { name: "Wet Food", value: 27, fill: "#2563EB" },
-      { name: "Treats", value: 18, fill: "#16A34A" },
+      { name: "Adult Food", value: 38, fill: "#F97316" },
+      { name: "Kitten Food", value: 27, fill: "#2563EB" },
+      { name: "Collar", value: 18, fill: "#16A34A" },
       { name: "Supplements", value: 11, fill: "#D97706" },
       { name: "Accessories", value: 6, fill: "#DC2626" },
     ],
-    lowStockItems: lowStockItems.map(toProduct),
+    lowStockItems: lowStockItems.map(toProductDto),
     recentTransactions: recentTxns.map(toTxn),
   };
 

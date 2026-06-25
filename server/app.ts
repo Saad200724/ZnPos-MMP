@@ -9,6 +9,7 @@ import { logger } from "./lib/logger";
 declare module "express-session" {
   interface SessionData {
     userId: number;
+    userObjectId: string;
   }
 }
 
@@ -23,6 +24,7 @@ app.use(
     },
   }),
 );
+app.set("trust proxy", 1);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -37,10 +39,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: "none",
     },
   }),
 );

@@ -1,5 +1,7 @@
 export { User } from "./User";
 export { Product } from "./Product";
+export { Category } from "./Category";
+export { Brand } from "./Brand";
 export { Customer } from "./Customer";
 export { Transaction } from "./Transaction";
 export { Supplier } from "./Supplier";

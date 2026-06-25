@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import mongoose from "mongoose";
 import { Transaction, Product, Customer, nextId } from "../db";
 import {
   GetTransactionsResponse, GetTransactionResponse, CreateTransactionBody,
@@ -88,16 +89,27 @@ router.post("/transactions", requireAuth, async (req, res): Promise<void> => {
     items,
   });
 
+  // Deduct stock using MERN website's stockQuantity field
   for (const item of data.items) {
     if (item.productId) {
-      await Product.findOneAndUpdate(
-        { id: item.productId },
-        { $inc: { stock: -item.qty }, $set: { updatedAt: new Date() } }
-      );
-      await Product.findOneAndUpdate(
-        { id: item.productId, stock: { $lt: 0 } },
-        { $set: { stock: 0 } }
-      );
+      const productIdStr = String(item.productId);
+      if (mongoose.Types.ObjectId.isValid(productIdStr)) {
+        await Product.findByIdAndUpdate(productIdStr, {
+          $inc: { stockQuantity: -item.qty },
+          $set: { updatedAt: new Date() },
+        });
+        // Ensure stock doesn't go below 0 and update status
+        const updated = await Product.findById(productIdStr);
+        if (updated && updated.stockQuantity < 0) {
+          await Product.findByIdAndUpdate(productIdStr, {
+            $set: { stockQuantity: 0, stockStatus: "Out of Stock", updatedAt: new Date() },
+          });
+        } else if (updated && updated.stockQuantity === 0) {
+          await Product.findByIdAndUpdate(productIdStr, {
+            $set: { stockStatus: "Out of Stock" },
+          });
+        }
+      }
     }
   }
 
@@ -110,14 +122,7 @@ router.post("/transactions", requireAuth, async (req, res): Promise<void> => {
         : customer.balance;
       await Customer.findOneAndUpdate(
         { id: data.customerId },
-        {
-          $set: {
-            visits: customer.visits + 1,
-            totalPurchases: newTotalPurchases,
-            balance: newBalance,
-            updatedAt: new Date(),
-          },
-        }
+        { $set: { visits: customer.visits + 1, totalPurchases: newTotalPurchases, balance: newBalance, updatedAt: new Date() } }
       );
     }
   }

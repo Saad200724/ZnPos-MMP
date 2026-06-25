@@ -36,4 +36,4 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://saadbintofayeltahsin:Saad20985@meowmeowpetshop.ypghsvp.mongodb.net/mew-mew-pos?retryWrites=true&w=majority&appName=MeowMeowPetShop"
+MONGODB_URI = "mongodb+srv://saadbintofayeltahsin:Saad20985@meowmeowpetshop.ypghsvp.mongodb.net/?retryWrites=true&w=majority&appName=MeowMeowPetShop"
