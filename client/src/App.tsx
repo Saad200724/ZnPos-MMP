@@ -15,6 +15,16 @@ import { Suppliers } from "@/pages/Suppliers";
 import { Purchases } from "@/pages/Purchases";
 import { Reports } from "@/pages/Reports";
 import { Settings } from "@/pages/Settings";
+import { Inventory } from "@/pages/Inventory";
+import { Sales } from "@/pages/Sales";
+import { Accounts } from "@/pages/Accounts";
+import { Quotations } from "@/pages/Quotations";
+import { Expenses } from "@/pages/Expenses";
+import { Assets } from "@/pages/Assets";
+import { Employees } from "@/pages/Employees";
+import { UserManagement } from "@/pages/UserManagement";
+import { Messages } from "@/pages/Messages";
+import { ActivityLog } from "@/pages/ActivityLog";
 import { useEffect, type ReactNode } from "react";
 import { Cat } from "lucide-react";
 
@@ -60,11 +70,21 @@ function Router() {
             <Switch>
               <Route path="/" component={Dashboard} />
               <Route path="/pos" component={POSTerminal} />
+              <Route path="/sales" component={Sales} />
               <Route path="/products" component={Products} />
+              <Route path="/inventory" component={Inventory} />
               <Route path="/customers" component={Customers} />
               <Route path="/suppliers" component={Suppliers} />
               <Route path="/purchases" component={Purchases} />
+              <Route path="/quotations" component={Quotations} />
+              <Route path="/accounts" component={Accounts} />
+              <Route path="/expenses" component={Expenses} />
+              <Route path="/assets" component={Assets} />
+              <Route path="/employees" component={Employees} />
+              <Route path="/users" component={UserManagement} />
+              <Route path="/messages" component={Messages} />
               <Route path="/reports" component={Reports} />
+              <Route path="/activity-log" component={ActivityLog} />
               <Route path="/settings" component={Settings} />
               <Route component={NotFound} />
             </Switch>
