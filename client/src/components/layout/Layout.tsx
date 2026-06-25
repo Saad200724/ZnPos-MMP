@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Truck,
   Receipt, BarChart2, Settings, Menu, Search, Bell, X, LogOut, Zap,
   Package2, TrendingUp, Landmark, FileText, ArrowDownLeft,
-  Boxes, UserCheck, UsersRound, MessageSquare, Activity, ChevronDown
+  Boxes, UserCheck, UsersRound, MessageSquare, Activity, ChevronDown,
+  ShoppingBag, LineChart, Layers, ClipboardList, RotateCcw,
+  User, ChevronRight, KeyRound
 } from 'lucide-react';
 import logo from '/logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -70,6 +72,88 @@ const navGroups: NavGroup[] = [
 ];
 
 const allNavItems = navGroups.flatMap(g => g.items);
+
+function ProfileMenu({ user, logout }: { user: any; logout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const initials = (user?.name ?? 'U').substring(0, 2).toUpperCase();
+
+  const menuLinks = [
+    { icon: User, label: 'My Profile', path: '/settings' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: KeyRound, label: 'Change Password', path: '/settings' },
+  ];
+
+  return (
+    <div ref={ref} className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen(v => !v)}
+        aria-label="Profile menu"
+        aria-expanded={open}
+        className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs bg-primary text-primary-foreground cursor-pointer hover:opacity-90 transition-opacity shadow-md shadow-primary/25 select-none"
+      >
+        {initials}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -6 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
+            className="absolute right-0 top-[calc(100%+8px)] w-56 bg-card border border-border rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-50"
+          >
+            {/* User info */}
+            <div className="px-4 py-3 border-b border-border bg-accent/30">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs bg-primary text-primary-foreground shadow-md shadow-primary/25 flex-shrink-0">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-foreground truncate">{user?.name ?? 'Admin'}</div>
+                  <div className="text-xs text-muted-foreground capitalize truncate">{user?.role ?? 'Staff'} · {user?.branch ?? 'Main Branch'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu items */}
+            <div className="py-1.5">
+              {menuLinks.map(({ icon: Icon, label, path }) => (
+                <Link key={label} href={path} onClick={() => setOpen(false)}>
+                  <div className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors duration-150 cursor-pointer">
+                    <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    {label}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Logout */}
+            <div className="border-t border-border py-1.5">
+              <button
+                onClick={() => { setOpen(false); logout(); }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors duration-150 cursor-pointer text-left"
+              >
+                <LogOut className="w-4 h-4 flex-shrink-0" />
+                Sign Out
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -265,22 +349,61 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <div className="hidden md:flex items-center gap-2 bg-accent/60 border border-border rounded-xl px-3 py-1.5 w-52 transition-all duration-200 focus-within:bg-background focus-within:border-primary focus-within:shadow-sm focus-within:w-64">
-              <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-              <input
-                className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground/60"
-                placeholder="Quick search..."
-              />
-            </div>
-            <button className="relative p-2 rounded-xl hover:bg-accent transition-all duration-200 text-muted-foreground hover:text-foreground cursor-pointer">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-card" />
+          <div className="flex items-center gap-1.5 flex-1 justify-end">
+            {/* Quick Action Pills */}
+            <nav className="hidden lg:flex items-center gap-1.5" aria-label="Quick actions">
+              <Link href="/purchases">
+                <button className="quick-pill bg-orange-500 hover:bg-orange-600 shadow-orange-200" aria-label="Purchases">
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Purchases</span>
+                </button>
+              </Link>
+              <Link href="/reports">
+                <button className="quick-pill bg-pink-500 hover:bg-pink-600 shadow-pink-200" aria-label="Sales Report">
+                  <LineChart className="w-3.5 h-3.5" />
+                  <span>Sales Report</span>
+                </button>
+              </Link>
+              <Link href="/inventory">
+                <button className="quick-pill bg-violet-500 hover:bg-violet-600 shadow-violet-200" aria-label="Stock">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Stock</span>
+                </button>
+              </Link>
+              <Link href="/reports">
+                <button className="quick-pill bg-sky-500 hover:bg-sky-600 shadow-sky-200" aria-label="Summary">
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>Summary</span>
+                </button>
+              </Link>
+              <Link href="/sales">
+                <button className="quick-pill bg-teal-500 hover:bg-teal-600 shadow-teal-200" aria-label="Returns">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Returns</span>
+                </button>
+              </Link>
+              <Link href="/pos">
+                <button className="quick-pill bg-indigo-500 hover:bg-indigo-600 shadow-indigo-200" aria-label="POS Terminal">
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <span>POS</span>
+                </button>
+              </Link>
+            </nav>
+
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-6 bg-border mx-1 flex-shrink-0" />
+
+            {/* Notification Bell */}
+            <button
+              className="relative flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-all duration-200 text-muted-foreground hover:text-foreground cursor-pointer"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[18px] h-[18px]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-card" />
             </button>
-            <div className="hidden sm:flex items-center gap-1.5 bg-primary/8 border border-primary/20 rounded-xl px-3 py-1.5 cursor-pointer hover:bg-primary/14 transition-all duration-200">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-              <span className="text-sm font-semibold text-foreground">{user?.branch ?? 'Main Branch'}</span>
-            </div>
+
+            {/* Profile dropdown */}
+            <ProfileMenu user={user} logout={logout} />
           </div>
         </header>
 
