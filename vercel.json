@@ -1,0 +1,15 @@
+{
+  "buildCommand": "BASE_PATH=/ npm run build:client",
+  "outputDirectory": "client/dist/public",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
