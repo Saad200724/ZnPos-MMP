@@ -1,0 +1,93 @@
+
+
+All logs
+Search
+Search logs
+
+Jun 26, 3:37 PM - 3:40 PM
+GMT+6
+
+
+
+> mew-mew-pos@1.0.0 build:client
+> BASE_PATH=/ vite build --config client/vite.config.ts
+vite v7.3.5 building client environment for production...
+transforming...
+✓ 2810 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                   1.38 kB │ gzip:   0.54 kB
+dist/public/assets/index-BJZ77Nkd.css  141.34 kB │ gzip:  22.23 kB
+dist/public/assets/index-D0BmlXuG.js   986.37 kB │ gzip: 285.08 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.29s
+> mew-mew-pos@1.0.0 build:server
+> node server/build.mjs
+▲ [WARNING] Cannot find base config file "../tsconfig.base.json" [tsconfig.json]
+    shared/tsconfig.json:2:13:
+      2 │   "extends": "../tsconfig.base.json",
+        ╵              ~~~~~~~~~~~~~~~~~~~~~~~
+1 warning
+  server/dist/index.mjs                       1.5mb ⚠️
+  server/dist/pino-worker.mjs               153.0kb
+  server/dist/pino-file.mjs                 141.7kb
+  server/dist/pino-pretty.mjs               114.1kb
+  server/dist/thread-stream-worker.mjs        7.3kb
+  server/dist/index.mjs.map                   2.4mb
+  server/dist/pino-worker.mjs.map           256.8kb
+  server/dist/pino-file.mjs.map             228.9kb
+  server/dist/pino-pretty.mjs.map           203.9kb
+  server/dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 237ms
+==> Uploading build...
+==> Uploaded in 3.8s. Compression took 3.5s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'pnpm run start'
+> mew-mew-pos@1.0.0 start /opt/render/project/src
+> node --enable-source-maps server/dist/index.mjs
+/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218
+          throw new PathError(`Missing parameter name at index ${index}`, str);
+                ^
+PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218:17)
+    at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:262:24)
+    at process (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:466:52)
+    at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:478:3)
+    at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:416:28)
+    at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+    at router11.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+    at app2.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+    at app2.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22) {
+  originalPath: '*'
+}
+Node.js v24.14.1
+ ELIFECYCLE  Command failed with exit code 1.
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'pnpm run start'
+> mew-mew-pos@1.0.0 start /opt/render/project/src
+> node --enable-source-maps server/dist/index.mjs
+/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218
+          throw new PathError(`Missing parameter name at index ${index}`, str);
+                ^
+PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+    at consumeUntil (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218:17)
+    at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:262:24)
+    at process (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:466:52)
+    at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:478:3)
+    at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:416:28)
+    at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+    at router11.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+    at app2.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+    at app2.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22) {
+  originalPath: '*'
+}
+Node.js v24.14.1
+ ELIFECYCLE  Command failed with exit code 1.
