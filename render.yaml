@@ -4,8 +4,8 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: npm install && npm run build:all
-    startCommand: npm start
+    buildCommand: npm install -g pnpm && pnpm install && pnpm run build:all
+    startCommand: pnpm start
     healthCheckPath: /api/auth/me
     envVars:
       - key: NODE_ENV
