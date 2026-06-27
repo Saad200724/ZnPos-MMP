@@ -117,7 +117,7 @@
   --sidebar: 142 58% 8%;                /* deep forest green */
   --sidebar-foreground: 120 18% 72%;    /* muted green-grey */
   --sidebar-border: 142 45% 14%;
-  --sidebar-primary: 142 60% 42%;       /* green-500 */
+  --sidebar-primary: 142 38% 32%;       /* muted green */
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 142 42% 12%;        /* slightly lighter dark green */
   --sidebar-accent-foreground: 0 0% 100%;
@@ -195,11 +195,11 @@
   --sidebar: 142 58% 5%;
   --sidebar-foreground: 120 18% 72%;
   --sidebar-border: 142 40% 12%;
-  --sidebar-primary: 142 60% 42%;
+  --sidebar-primary: 142 38% 32%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 142 40% 10%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 142 60% 42%;
+  --sidebar-ring: 142 38% 32%;
   --popover: 142 25% 11%;
   --popover-foreground: 120 15% 94%;
   --popover-border: 142 30% 18%;
