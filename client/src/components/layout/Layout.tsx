@@ -227,20 +227,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             group/item relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] font-semibold
                             transition-all duration-150 cursor-pointer mb-0.5
                             ${active
-                              ? 'bg-sidebar-primary text-primary-foreground shadow-sm shadow-sidebar-primary/30'
+                              ? 'bg-sidebar-primary text-primary-foreground'
                               : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-white'}
                           `}>
                             {active && (
-                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/70 rounded-r-full" />
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-white/35 rounded-r-full" />
                             )}
                             <div className={`
                               w-6 h-6 flex items-center justify-center rounded-lg flex-shrink-0 transition-all duration-150
-                              ${active ? 'bg-white/20' : 'group-hover/item:bg-white/10'}
+                              ${active ? 'bg-white/15' : 'group-hover/item:bg-white/10'}
                             `}>
                               <Icon className="w-[15px] h-[15px]" />
                             </div>
                             <span className="truncate flex-1">{label}</span>
-                            {active && <div className="w-1.5 h-1.5 rounded-full bg-white/60 flex-shrink-0" />}
+                            {active && <div className="w-1.5 h-1.5 rounded-full bg-white/35 flex-shrink-0" />}
                           </div>
                         </Link>
                       );
