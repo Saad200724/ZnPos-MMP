@@ -253,16 +253,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         })}
       </div>
 
-      {/* Quick POS CTA */}
-      <div className="px-2.5 pb-2.5 flex-shrink-0">
-        <Link href="/pos" onClick={closeMobileMenu}>
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-sidebar-primary/20 border border-sidebar-primary/30 text-[13px] font-bold text-white cursor-pointer hover:bg-sidebar-primary/35 transition-all duration-200 group">
-            <Zap className="w-4 h-4 text-yellow-300 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" />
-            <span>Open POS Terminal</span>
-          </div>
-        </Link>
-      </div>
-
       {/* User */}
       <div className="px-2.5 pb-3 border-t border-sidebar-border pt-2.5 flex-shrink-0">
         <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-sidebar-accent/50 transition-all duration-200 group">
