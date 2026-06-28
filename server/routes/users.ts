@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { User, nextId } from "../db";
 import { requireAuth } from "../middlewares/requireAuth";
 

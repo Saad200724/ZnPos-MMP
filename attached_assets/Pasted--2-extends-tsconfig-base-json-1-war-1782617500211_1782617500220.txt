@@ -1,0 +1,43 @@
+      2 │   "extends": "../tsconfig.base.json",
+        ╵              ~~~~~~~~~~~~~~~~~~~~~~~
+1 warning
+  server/dist/index.mjs                       1.5mb ⚠️
+  server/dist/pino-worker.mjs               153.0kb
+  server/dist/pino-file.mjs                 141.7kb
+  server/dist/pino-pretty.mjs               114.1kb
+  server/dist/thread-stream-worker.mjs        7.3kb
+  server/dist/index.mjs.map                   2.4mb
+  server/dist/pino-worker.mjs.map           256.8kb
+  server/dist/pino-file.mjs.map             228.9kb
+  server/dist/pino-pretty.mjs.map           203.9kb
+  server/dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 295ms
+==> Uploading build...
+==> Uploaded in 4.5s. Compression took 3.3s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'pnpm run start'
+> mew-mew-pos@1.0.0 start /opt/render/project/src
+> node --enable-source-maps server/dist/index.mjs
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'bcrypt' imported from /opt/render/project/src/server/dist/index.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:859:18)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:719:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:736:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:765:52)
+    at #resolve (node:internal/modules/esm/loader:701:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:621:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+Node.js v24.14.1
+ ELIFECYCLE  Command failed with exit code 1.
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'pnpm run start'
