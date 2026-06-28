@@ -338,13 +338,6 @@ export function POSTerminal() {
             <div className="text-xl font-extrabold font-display leading-tight">৳ {total.toFixed(2)}</div>
           </div>
 
-          {/* Exchange */}
-          <button disabled={cart.length === 0}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all duration-200 cursor-pointer shadow-md shadow-blue-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 min-w-[60px]">
-            <RefreshCw className="w-4 h-4" />
-            Exchange
-          </button>
-
           {/* Hold */}
           <button onClick={holdCart} disabled={cart.length === 0}
             className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all duration-200 cursor-pointer shadow-md shadow-amber-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 min-w-[60px]">
