@@ -8,6 +8,14 @@ import dashboardRouter from "./routes/dashboard";
 import suppliersRouter from "./routes/suppliers";
 import purchasesRouter from "./routes/purchases";
 import categoriesRouter from "./routes/categories";
+import employeesRouter from "./routes/employees";
+import expensesRouter from "./routes/expenses";
+import assetsRouter from "./routes/assets";
+import quotationsRouter from "./routes/quotations";
+import inventoryRouter from "./routes/inventory";
+import reportsRouter from "./routes/reports";
+import usersRouter from "./routes/users";
+import settingsRouter from "./routes/settings";
 
 const router: IRouter = Router();
 
@@ -20,5 +28,13 @@ router.use(dashboardRouter);
 router.use(suppliersRouter);
 router.use(purchasesRouter);
 router.use(categoriesRouter);
+router.use(employeesRouter);
+router.use(expensesRouter);
+router.use(assetsRouter);
+router.use(quotationsRouter);
+router.use(inventoryRouter);
+router.use(reportsRouter);
+router.use(usersRouter);
+router.use(settingsRouter);
 
 export default router;
