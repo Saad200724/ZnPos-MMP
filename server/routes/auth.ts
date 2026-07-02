@@ -41,6 +41,25 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }));
 });
 
+router.post("/auth/change-password", requireAuth, async (req, res): Promise<void> => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+  const objectId = req.session.userObjectId;
+  const user = objectId ? await User.findById(objectId) : await User.findOne({ id: req.session.userId });
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  const hash = user.passwordHash ?? user.password;
+  if (!hash || !(await bcrypt.compare(currentPassword, hash))) {
+    res.status(401).json({ error: "Current password is incorrect" });
+    return;
+  }
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await User.findByIdAndUpdate(user._id, { $set: { password: newHash, passwordHash: newHash } });
+  res.json({ message: "Password changed successfully" });
+});
+
 router.post("/auth/logout", async (req, res): Promise<void> => {
   req.session.destroy(() => {});
   res.sendStatus(204);
