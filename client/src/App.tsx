@@ -26,19 +26,22 @@ import { UserManagement } from "@/pages/UserManagement";
 import { Messages } from "@/pages/Messages";
 import { ActivityLog } from "@/pages/ActivityLog";
 import { useEffect, type ReactNode } from "react";
-import { Cat } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#FFF7ED] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[#F97316] flex items-center justify-center mx-auto mb-4 animate-pulse">
-          <Cat className="w-9 h-9 text-white" />
+      <div className="flex flex-col items-center gap-5">
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Mew Mew Pet Shop" className="w-24 h-24 rounded-full shadow-md animate-pulse" />
+        <div className="flex items-center gap-1.5">
+          {[0, 1, 2].map(i => (
+            <span key={i} className="w-2 h-2 rounded-full bg-[#F97316]"
+              style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+          ))}
         </div>
-        <p className="text-[#78716C] font-semibold">Loading...</p>
       </div>
+      <style>{`@keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }`}</style>
     </div>
   );
 }
