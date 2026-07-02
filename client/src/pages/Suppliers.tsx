@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Truck, Phone, Mail, MapPin, Plus, Search, X, Edit2, Eye,
-  AlertCircle, DollarSign, Users, TrendingUp, ChevronRight
+  Truck, Phone, Mail, MapPin, Plus, Search, X, Edit2, AlertCircle, DollarSign, TrendingUp, Trash2
 } from 'lucide-react';
-
-interface Supplier {
-  id: number; name: string; phone: string | null; email: string | null;
-  address: string | null; balance: number; createdAt: string;
-}
+import {
+  useGetSuppliers, useCreateSupplier, useUpdateSupplier,
+  getGetSuppliersQueryKey,
+} from '@/lib/api';
+import { customFetch } from '@/lib/api/custom-fetch';
+import { useMutation } from '@tanstack/react-query';
 
 const fmt = (n: number) => `৳${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -19,34 +19,53 @@ const blank = { name: '', phone: '', email: '', address: '' };
 export function Suppliers() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Supplier | null>(null);
+  const [selected, setSelected] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Supplier | null>(null);
+  const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>(blank);
   const [err, setErr] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
 
-  const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
-    queryKey: ['suppliers'],
-    queryFn: async () => {
-      const r = await fetch('/api/suppliers', { credentials: 'include' });
-      return r.json();
+  const { data: suppliers = [], isLoading } = useGetSuppliers();
+
+  const create = useCreateSupplier({
+    mutation: {
+      onSuccess: () => { qc.invalidateQueries({ queryKey: getGetSuppliersQueryKey() }); closeModal(); },
+      onError: (e: any) => setErr(e?.data?.error ?? e.message ?? 'Failed'),
     },
   });
 
-  const save = useMutation({
-    mutationFn: async (data: any) => {
-      const url = editing ? `/api/suppliers/${editing.id}` : '/api/suppliers';
-      const r = await fetch(url, { method: editing ? 'PATCH' : 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      if (!r.ok) throw new Error((await r.json()).error ?? 'Failed');
-      return r.json();
+  const update = useUpdateSupplier({
+    mutation: {
+      onSuccess: () => { qc.invalidateQueries({ queryKey: getGetSuppliersQueryKey() }); closeModal(); },
+      onError: (e: any) => setErr(e?.data?.error ?? e.message ?? 'Failed'),
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppliers'] }); closeModal(); },
-    onError: (e: any) => setErr(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => customFetch<void>(`/api/suppliers/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: getGetSuppliersQueryKey() });
+      setConfirmDelete(null);
+      setSelected(null);
+    },
   });
 
   const openAdd = () => { setEditing(null); setForm(blank); setErr(''); setModalOpen(true); };
-  const openEdit = (s: Supplier) => { setEditing(s); setForm({ name: s.name, phone: s.phone ?? '', email: s.email ?? '', address: s.address ?? '' }); setErr(''); setModalOpen(true); };
+  const openEdit = (s: any) => {
+    setEditing(s);
+    setForm({ name: s.name, phone: s.phone ?? '', email: s.email ?? '', address: s.address ?? '' });
+    setErr('');
+    setModalOpen(true);
+  };
   const closeModal = () => { setModalOpen(false); setEditing(null); setForm(blank); setErr(''); };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null };
+    if (editing) update.mutate({ id: editing.id, data });
+    else create.mutate({ data });
+  };
 
   const filtered = suppliers.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,11 +77,13 @@ export function Suppliers() {
   const totalPaid = suppliers.reduce((s, sup) => s + (sup.balance > 0 ? sup.balance : 0), 0);
 
   const stats = [
-    { label: 'Total Suppliers', value: suppliers.length.toString(), icon: Truck, color: 'text-violet-600', bg: 'bg-violet-50' },
-    { label: 'With Due Balance', value: suppliers.filter(s => s.balance < 0).length.toString(), icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Total Payable', value: fmt(totalDue), icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Total Paid', value: fmt(totalPaid), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Total Suppliers',  value: suppliers.length.toString(),                         icon: Truck,        color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'With Due Balance', value: suppliers.filter(s => s.balance < 0).length.toString(), icon: AlertCircle, color: 'text-red-600',    bg: 'bg-red-50' },
+    { label: 'Total Payable',    value: fmt(totalDue),                                         icon: DollarSign,  color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: 'Total Paid',       value: fmt(totalPaid),                                        icon: TrendingUp,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
+
+  const isPending = create.isPending || update.isPending;
 
   return (
     <div className="flex flex-col h-full bg-background p-4 sm:p-6 max-w-[1600px] mx-auto">
@@ -120,7 +141,7 @@ export function Suppliers() {
                 </thead>
                 <tbody>
                   {filtered.map((sup, i) => {
-                    const initials = sup.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                    const initials = sup.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
                     const ac = avatarColors[sup.id % avatarColors.length];
                     return (
                       <motion.tr key={sup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 20) * 0.015 }}
@@ -150,6 +171,7 @@ export function Suppliers() {
                         <td className="px-4 py-3">
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={e => { e.stopPropagation(); openEdit(sup); }} className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-primary transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={e => { e.stopPropagation(); setConfirmDelete(sup); }} className="p-1.5 hover:bg-red-50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </td>
                       </motion.tr>
@@ -174,7 +196,7 @@ export function Suppliers() {
                   <X className="w-3.5 h-3.5" />
                 </button>
                 <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl font-display font-bold text-white shadow-md mb-3 ${avatarColors[selected.id % avatarColors.length]}`}>
-                  {selected.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                  {selected.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <h2 className="text-lg font-display font-bold text-foreground mb-0.5">{selected.name}</h2>
                 <span className="text-xs text-muted-foreground font-semibold">Supplier #{selected.id}</span>
@@ -199,7 +221,7 @@ export function Suppliers() {
                 </div>
                 <div className="space-y-2 pt-1">
                   <button onClick={() => openEdit(selected)} className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm transition-colors shadow-sm">Edit Supplier</button>
-                  <button className="w-full py-2.5 rounded-xl bg-background border border-border text-foreground font-bold text-sm hover:bg-accent transition-colors shadow-sm">View Purchases</button>
+                  <button onClick={() => setConfirmDelete(selected)} className="w-full py-2.5 rounded-xl bg-background border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50 transition-colors shadow-sm">Delete Supplier</button>
                 </div>
               </div>
             </motion.div>
@@ -218,9 +240,9 @@ export function Suppliers() {
                 <h2 className="font-display font-bold text-lg text-card-foreground">{editing ? 'Edit Supplier' : 'Add Supplier'}</h2>
                 <button onClick={closeModal} className="p-2 hover:bg-accent rounded-xl transition-colors"><X className="w-4 h-4" /></button>
               </div>
-              <form className="p-5 space-y-4" onSubmit={e => { e.preventDefault(); save.mutate(form); }}>
+              <form className="p-5 space-y-4" onSubmit={handleSubmit}>
                 {err && <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"><AlertCircle className="w-4 h-4" />{err}</div>}
-                {[['Supplier Name *', 'name', 'text'], ['Phone', 'phone', 'tel'], ['Email', 'email', 'email']].map(([label, key, type]) => (
+                {([['Supplier Name *', 'name', 'text'], ['Phone', 'phone', 'tel'], ['Email', 'email', 'email']] as const).map(([label, key, type]) => (
                   <div key={key}>
                     <label className="block text-xs font-bold text-muted-foreground mb-1.5">{label}</label>
                     <input type={type} required={key === 'name'} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })}
@@ -234,11 +256,32 @@ export function Suppliers() {
                 </div>
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold text-foreground hover:bg-accent transition-colors">Cancel</button>
-                  <button type="submit" disabled={save.isPending} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-60">
-                    {save.isPending ? 'Saving…' : editing ? 'Save Changes' : 'Add Supplier'}
+                  <button type="submit" disabled={isPending} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-60">
+                    {isPending ? 'Saving…' : editing ? 'Save Changes' : 'Add Supplier'}
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="bg-card border border-card-border rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+              <Trash2 className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="font-display font-bold text-lg text-foreground mb-2">Delete Supplier?</h3>
+              <p className="text-sm text-muted-foreground mb-6">This will permanently delete <strong>{confirmDelete.name}</strong>. This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-accent transition-colors">Cancel</button>
+                <button disabled={remove.isPending} onClick={() => remove.mutate(confirmDelete.id)}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors disabled:opacity-60">
+                  {remove.isPending ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

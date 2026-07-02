@@ -34,6 +34,15 @@ router.post("/suppliers", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(UpdateSupplierResponse.parse(toSupplier(supplier)));
 });
 
+router.delete("/suppliers/:id", requireAuth, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const supplier = await Supplier.findOne({ id });
+  if (!supplier) { res.status(404).json({ error: "Supplier not found" }); return; }
+  await Supplier.findOneAndDelete({ id });
+  res.sendStatus(204);
+});
+
 router.patch("/suppliers/:id", requireAuth, async (req, res): Promise<void> => {
   const params = UpdateSupplierParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
